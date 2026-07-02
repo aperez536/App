@@ -179,7 +179,8 @@ def _build_item_payload(file_path: Path) -> dict:
         "path": str(file_path),
         "section": classify_file(str(file_path)),
         "extension": file_path.suffix.lower(),
-        "size_bytes": file_path.stat().st_size,
+        "size_bytes": None,
+        "file_mtime_ns": 0,
     }
 
 
@@ -236,9 +237,9 @@ def create_app() -> Flask:
         query_args["refresh"] = "1"
         return url_for(request.endpoint, **route_args, **query_args)
 
-    def with_cache_token(target_url: str, file_path: Path, *, force_refresh: bool = False) -> str:
+    def with_cache_token(target_url: str, file_mtime_ns: int | None, *, force_refresh: bool = False) -> str:
         separator = "&" if "?" in target_url else "?"
-        token = str(file_path.stat().st_mtime_ns)
+        token = str(file_mtime_ns or 0)
         if force_refresh:
             token = f"{token}-{time.time_ns()}"
         return f"{target_url}{separator}v={token}"
@@ -265,12 +266,11 @@ def create_app() -> Flask:
                 and not entry.name.startswith(".")
                 and _is_image_ext(entry.suffix.lower())
             ]
-            current_path = file_path.resolve()
             if not files:
                 return None
 
             current_index = next(
-                (index for index, entry in enumerate(files) if entry.resolve() == current_path),
+                (index for index, entry in enumerate(files) if entry == file_path),
                 None,
             )
             if current_index is None:
@@ -573,7 +573,7 @@ def create_app() -> Flask:
             file_path,
             inline_url=with_cache_token(
                 url_for("file_serve", path=str(file_path)),
-                file_path,
+                item.get("file_mtime_ns"),
                 force_refresh=force_refresh,
             ),
             download_url=url_for("file_serve", path=str(file_path), dl=1),
@@ -674,7 +674,7 @@ def create_app() -> Flask:
             file_path,
             inline_url=with_cache_token(
                 url_for("view_item", item_id=item_id),
-                file_path,
+                item.get("file_mtime_ns"),
                 force_refresh=force_refresh,
             ),
             download_url=url_for("download_item", item_id=item_id),
