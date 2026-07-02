@@ -89,9 +89,11 @@
     }
   });
 
-  /* Samsung TV remote "Return" key.
+/* Samsung TV remote "Return" key.
      Tizen OS fires keyCode 10009 for the physical Back button and does not
-     map it to a standard e.key value, so keyCode is intentionally used here. */
+     map it to a standard e.key value, so keyCode is intentionally used here.
+     We handle this inside the same switch fall-through when possible,
+     but keyCode cannot be matched in a switch on e.key, so it stays here. */
   document.addEventListener('keydown', function (e) {
     if (e.keyCode === 10009) { e.preventDefault(); goBack(); }
   });
@@ -122,9 +124,10 @@
       });
     }
 
-    /* Auto-focus first focusable card on page load (TV UX) */
+    /* Auto-focus first focusable card on page load (TV UX).
+       Skip if any interactive element already has focus. */
     const first = document.querySelector('.media-card, .section-card, .folder-card');
-    if (first && !document.querySelector('input:focus')) {
+    if (first && document.activeElement === document.body) {
       first.focus();
     }
   });

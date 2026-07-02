@@ -38,6 +38,9 @@ def _path_allowed(target: Path, configured_paths: list[str]) -> bool:
 
     Both paths are fully resolved (symlinks expanded, ``..`` removed) before
     comparison so that path-traversal tricks cannot bypass the allowlist.
+
+    The explicit equality check handles the edge case where *target* **is** the
+    configured root itself (``is_relative_to`` returns False in that case).
     Requires Python 3.9+ for ``Path.is_relative_to``.
     """
     for cp in configured_paths:
