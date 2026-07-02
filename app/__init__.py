@@ -2,11 +2,13 @@ import mimetypes
 import os
 import posixpath
 import re
+import time
 import zipfile
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree as ET
 
 from flask import Flask, Response, abort, redirect, render_template, request, send_file, url_for
+from werkzeug.exceptions import HTTPException
 
 from .classification import (
     COMIC_ARCHIVE_EXTENSIONS,
@@ -30,6 +32,8 @@ EPUB_DOCUMENT_MIME_TYPES = {"application/xhtml+xml", "text/html"}
 COMIC_PAGE_EXTENSIONS = INLINE_IMAGE_EXTENSIONS
 SUPPORTED_ITEM_EXTENSIONS = tuple(sorted(READABLE_EXTENSIONS))
 SUPPORTED_ITEM_PLACEHOLDERS = ", ".join("?" for _ in SUPPORTED_ITEM_EXTENSIONS)
+INLINE_IMAGE_DB_EXTENSIONS = tuple(sorted(INLINE_IMAGE_EXTENSIONS))
+INLINE_IMAGE_DB_PLACEHOLDERS = ", ".join("?" for _ in INLINE_IMAGE_DB_EXTENSIONS)
 
 
 def _get_view_mode(raw_value: str) -> str:
@@ -223,7 +227,112 @@ def create_app() -> Flask:
         item["path"] = str(file_path)
         item["extension"] = item.get("extension") or file_path.suffix.lower()
         item["size_bytes"] = item.get("size_bytes") or file_path.stat().st_size
+        item["file_mtime_ns"] = item.get("file_mtime_ns") or file_path.stat().st_mtime_ns
         return item, file_path
+
+    def build_refresh_url() -> str:
+        route_args = dict(request.view_args or {})
+        query_args = request.args.to_dict(flat=True)
+        query_args["refresh"] = "1"
+        return url_for(request.endpoint, **route_args, **query_args)
+
+    def with_cache_token(target_url: str, file_path: Path, *, force_refresh: bool = False) -> str:
+        separator = "&" if "?" in target_url else "?"
+        token = str(file_path.stat().st_mtime_ns)
+        if force_refresh:
+            token = f"{token}-{time.time_ns()}"
+        return f"{target_url}{separator}v={token}"
+
+    def build_image_navigation(item: dict, file_path: Path) -> dict | None:
+        if not _is_image_ext((item.get("extension") or file_path.suffix).lower()):
+            return None
+
+        view_mode = _get_view_mode(request.args.get("view", "grid"))
+        from_dir = request.args.get("from_dir", "").strip()
+        if item.get("id") is None:
+            target_dir = file_path.parent
+            if from_dir:
+                try:
+                    candidate_dir, _ = resolve_allowed_target(from_dir, expect_dir=True)
+                    target_dir = candidate_dir
+                except HTTPException:
+                    target_dir = file_path.parent
+
+            files = [
+                entry
+                for entry in sorted(target_dir.iterdir(), key=lambda p: p.name.lower())
+                if entry.is_file()
+                and not entry.name.startswith(".")
+                and _is_image_ext(entry.suffix.lower())
+            ]
+            current_path = file_path.resolve()
+            if not files:
+                return None
+
+            current_index = next(
+                (index for index, entry in enumerate(files) if entry.resolve() == current_path),
+                None,
+            )
+            if current_index is None:
+                return None
+
+            previous_url = None
+            next_url = None
+            if current_index > 0:
+                previous_url = url_for(
+                    "read_file",
+                    path=str(files[current_index - 1]),
+                    from_dir=str(target_dir),
+                    view=view_mode,
+                )
+            if current_index + 1 < len(files):
+                next_url = url_for(
+                    "read_file",
+                    path=str(files[current_index + 1]),
+                    from_dir=str(target_dir),
+                    view=view_mode,
+                )
+            return {"previous_url": previous_url, "next_url": next_url}
+
+        section = request.args.get("section", "").strip() or item.get("section")
+        conn = get_connection(app.config["DB_PATH"])
+        rows = conn.execute(
+            f"""
+            SELECT id
+            FROM items
+            WHERE section = ?
+              AND lower(COALESCE(extension, '')) IN ({INLINE_IMAGE_DB_PLACEHOLDERS})
+            ORDER BY file_name
+            """,
+            (section, *INLINE_IMAGE_DB_EXTENSIONS),
+        ).fetchall()
+        conn.close()
+        if not rows:
+            return None
+
+        ids = [row["id"] for row in rows]
+        try:
+            current_index = ids.index(item["id"])
+        except ValueError:
+            return None
+
+        previous_url = None
+        next_url = None
+        if current_index > 0:
+            previous_url = url_for(
+                "item_detail",
+                item_id=ids[current_index - 1],
+                section=section,
+                view=view_mode,
+            )
+        if current_index + 1 < len(ids):
+            next_url = url_for(
+                "item_detail",
+                item_id=ids[current_index + 1],
+                section=section,
+                view=view_mode,
+            )
+        return {"previous_url": previous_url, "next_url": next_url}
 
     def render_reader(item: dict, file_path: Path, inline_url: str, download_url: str):
         ext = (item.get("extension") or file_path.suffix).lower()
@@ -299,6 +408,8 @@ def create_app() -> Flask:
             reader_kind=reader_kind,
             comic_pages=comic_pages,
             epub=epub,
+            image_navigation=build_image_navigation(item, file_path),
+            refresh_url=build_refresh_url(),
         )
 
     @app.get("/")
@@ -456,10 +567,15 @@ def create_app() -> Flask:
         if not is_supported_file(str(file_path)):
             abort(404)
         item = _build_item_payload(file_path)
+        force_refresh = request.args.get("refresh") == "1"
         return render_reader(
             item,
             file_path,
-            inline_url=url_for("file_serve", path=str(file_path)),
+            inline_url=with_cache_token(
+                url_for("file_serve", path=str(file_path)),
+                file_path,
+                force_refresh=force_refresh,
+            ),
             download_url=url_for("file_serve", path=str(file_path), dl=1),
         )
 
@@ -552,10 +668,15 @@ def create_app() -> Flask:
     @app.get("/items/<int:item_id>")
     def item_detail(item_id: int):
         item, file_path = get_item_with_file(item_id)
+        force_refresh = request.args.get("refresh") == "1"
         return render_reader(
             item,
             file_path,
-            inline_url=url_for("view_item", item_id=item_id),
+            inline_url=with_cache_token(
+                url_for("view_item", item_id=item_id),
+                file_path,
+                force_refresh=force_refresh,
+            ),
             download_url=url_for("download_item", item_id=item_id),
         )
 

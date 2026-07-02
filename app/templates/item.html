@@ -25,6 +25,17 @@
     </div>
 
     {% if reader_kind == 'image' %}
+      {% if image_navigation and (image_navigation['previous_url'] or image_navigation['next_url']) %}
+        <div class="viewer-epub-toolbar" style="margin-bottom:.75rem">
+          {% if image_navigation['previous_url'] %}
+            <a class="btn btn-secondary btn-sm" href="{{ image_navigation['previous_url'] }}">← Imagen anterior</a>
+          {% endif %}
+          <span class="viewer-epub-current">Navegación de imágenes</span>
+          {% if image_navigation['next_url'] %}
+            <a class="btn btn-secondary btn-sm" href="{{ image_navigation['next_url'] }}">Siguiente imagen →</a>
+          {% endif %}
+        </div>
+      {% endif %}
       <div class="viewer-image-box" title="Clic para pantalla completa">
         <img src="{{ inline_url }}" alt="{{ item['file_name'] }}">
       </div>
@@ -103,6 +114,7 @@
     </div>
 
     <div class="viewer-actions">
+      <a class="btn btn-secondary" href="{{ refresh_url }}">🧹 Limpiar caché</a>
       <a class="btn btn-secondary" href="{{ download_url }}" tabindex="0">⬇ Descargar</a>
     </div>
 

@@ -97,7 +97,7 @@
         {% for item in items %}
           {% set ext = item['extension'] or '' %}
           {% set is_img = ext in ['.jpg','.jpeg','.png','.webp','.gif','.bmp','.svg','.avif','.tif','.tiff','.ico'] %}
-          <a class="media-card" href="{{ url_for('item_detail', item_id=item['id']) }}" tabindex="0">
+          <a class="media-card" href="{{ url_for('item_detail', item_id=item['id'], section=active_section, view=view_mode) }}" tabindex="0">
             <div class="media-thumb">
               {% if is_img %}
                 <img src="{{ url_for('view_item', item_id=item['id']) }}"
