@@ -34,9 +34,21 @@ def _get_configured_paths(db_path: Path) -> list[str]:
 
 
 def _path_allowed(target: Path, configured_paths: list[str]) -> bool:
-    resolved = [str(Path(cp).resolve()) for cp in configured_paths]
-    target_str = str(target)
-    return any(target_str == rcp or target_str.startswith(rcp + "/") for rcp in resolved)
+    """Return True only when *target* is within one of the configured scan paths.
+
+    Both paths are fully resolved (symlinks expanded, ``..`` removed) before
+    comparison so that path-traversal tricks cannot bypass the allowlist.
+    Requires Python 3.9+ for ``Path.is_relative_to``.
+    """
+    for cp in configured_paths:
+        root = Path(cp).resolve()
+        try:
+            if target == root or target.is_relative_to(root):
+                return True
+        except ValueError:
+            # Raised on Windows when paths are on different drives
+            continue
+    return False
 
 
 def create_app() -> Flask:
@@ -124,12 +136,15 @@ def create_app() -> Flask:
                 breadcrumbs=[],
             )
 
-        target = Path(browse_path_str).resolve()
+        try:
+            target = Path(browse_path_str).resolve(strict=True)
+        except (OSError, RuntimeError):
+            abort(404)
 
         if not _path_allowed(target, configured):
             abort(403)
 
-        if not target.exists() or not target.is_dir():
+        if not target.is_dir():
             abort(404)
 
         dirs = []
@@ -169,19 +184,21 @@ def create_app() -> Flask:
 
         # Build breadcrumbs
         breadcrumbs = []
-        resolved_configured = [str(Path(cp).resolve()) for cp in configured]
-        for rcp in resolved_configured:
-            if str(target) == rcp or str(target).startswith(rcp + "/"):
-                root_path = Path(rcp)
-                parts = []
-                p = target
-                while True:
-                    parts.append({"name": p.name, "path": str(p)})
-                    if p == root_path:
-                        break
-                    p = p.parent
-                breadcrumbs = list(reversed(parts))
-                break
+        for cp in configured:
+            root_path = Path(cp).resolve()
+            try:
+                if target == root_path or target.is_relative_to(root_path):
+                    parts = []
+                    p = target
+                    while True:
+                        parts.append({"name": p.name, "path": str(p)})
+                        if p == root_path:
+                            break
+                        p = p.parent
+                    breadcrumbs = list(reversed(parts))
+                    break
+            except ValueError:
+                continue
 
         parent = target.parent
         parent_path = str(parent) if _path_allowed(parent, configured) else None
@@ -203,12 +220,19 @@ def create_app() -> Flask:
             abort(400)
 
         configured = _get_configured_paths(app.config["DB_PATH"])
-        file_path = Path(file_path_str).resolve()
+        if not configured:
+            abort(403)
+
+        # Resolve symlinks and normalise the path before the allowlist check
+        try:
+            file_path = Path(file_path_str).resolve(strict=True)
+        except (OSError, RuntimeError):
+            abort(404)
 
         if not _path_allowed(file_path, configured):
             abort(403)
 
-        if not file_path.exists() or not file_path.is_file():
+        if not file_path.is_file():
             abort(404)
 
         mime_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"

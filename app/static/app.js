@@ -89,7 +89,9 @@
     }
   });
 
-  /* Samsung TV remote "Return" key (keyCode 10009) */
+  /* Samsung TV remote "Return" key.
+     Tizen OS fires keyCode 10009 for the physical Back button and does not
+     map it to a standard e.key value, so keyCode is intentionally used here. */
   document.addEventListener('keydown', function (e) {
     if (e.keyCode === 10009) { e.preventDefault(); goBack(); }
   });
