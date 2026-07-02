@@ -24,17 +24,46 @@
       <span class="items-title" style="font-size:1rem;word-break:break-all">{{ item['file_name'] }}</span>
     </div>
 
-    {# ── Inline viewer ───────────────────────────────────────── #}
-    {% if is_image %}
+    {% if reader_kind == 'image' %}
       <div class="viewer-image-box" title="Clic para pantalla completa">
-        <img src="{{ url_for('view_item', item_id=item['id']) }}"
-             alt="{{ item['file_name'] }}">
+        <img src="{{ inline_url }}" alt="{{ item['file_name'] }}">
       </div>
-    {% elif item['section'] == 'PDF' %}
+    {% elif reader_kind == 'pdf' %}
       <div class="viewer-pdf-box">
-        <embed src="{{ url_for('view_item', item_id=item['id']) }}"
-               type="application/pdf"
-               width="100%" height="100%">
+        <embed src="{{ inline_url }}" type="application/pdf" width="100%" height="100%">
+      </div>
+    {% elif reader_kind == 'comic' %}
+      <div class="viewer-comic-box">
+        {% for page in comic_pages %}
+          <img src="{{ page['url'] }}" alt="{{ page['label'] }}" loading="lazy">
+        {% endfor %}
+      </div>
+    {% elif reader_kind == 'epub' and epub %}
+      <div class="viewer-epub-layout">
+        <aside class="viewer-epub-sidebar">
+          <p class="sub-heading" style="margin-bottom:.75rem">Capítulos</p>
+          <div class="viewer-epub-chapters">
+            {% for chapter in epub['chapters'] %}
+              <a
+                class="viewer-epub-chapter {% if loop.index0 == epub['current_index'] %}active{% endif %}"
+                href="{{ chapter['url'] }}">
+                {{ chapter['label'] }}
+              </a>
+            {% endfor %}
+          </div>
+        </aside>
+        <div class="viewer-epub-main">
+          <div class="viewer-epub-toolbar">
+            {% if epub['previous_url'] %}
+              <a class="btn btn-secondary btn-sm" href="{{ epub['previous_url'] }}">← Anterior</a>
+            {% endif %}
+            <span class="viewer-epub-current">{{ epub['current_label'] }}</span>
+            {% if epub['next_url'] %}
+              <a class="btn btn-secondary btn-sm" href="{{ epub['next_url'] }}">Siguiente →</a>
+            {% endif %}
+          </div>
+          <iframe class="viewer-epub-frame" src="{{ epub['document_url'] }}" title="{{ epub['current_label'] }}"></iframe>
+        </div>
       </div>
     {% else %}
       <div class="empty-state" style="padding:2rem">
@@ -43,11 +72,10 @@
           {% elif item['section'] == 'Comics/Archives' %}📦
           {% else %}📁{% endif %}
         </span>
-        <p class="empty-text">Vista previa no disponible para este tipo de archivo.</p>
+        <p class="empty-text">No pudimos mostrar este archivo dentro de la app.</p>
       </div>
     {% endif %}
 
-    {# ── File info ───────────────────────────────────────────── #}
     <div class="viewer-info">
       <div class="vi-item">
         <span class="vi-label">Sección</span>
@@ -74,14 +102,8 @@
       </div>
     </div>
 
-    {# ── Actions ─────────────────────────────────────────────── #}
     <div class="viewer-actions">
-      <a class="btn btn-primary" href="{{ url_for('view_item', item_id=item['id']) }}" target="_blank" rel="noopener" tabindex="0">
-        🔗 Abrir en navegador
-      </a>
-      <a class="btn btn-secondary" href="{{ url_for('download_item', item_id=item['id']) }}" tabindex="0">
-        ⬇ Descargar
-      </a>
+      <a class="btn btn-secondary" href="{{ download_url }}" tabindex="0">⬇ Descargar</a>
     </div>
 
   </div>

@@ -52,7 +52,7 @@
 
     if (best) {
       best.focus();
-      best.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      best.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
     }
   }
 

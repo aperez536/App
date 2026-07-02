@@ -1,6 +1,6 @@
 import unittest
 
-from app.classification import classify_file
+from app.classification import classify_file, is_supported_file
 
 
 class ClassificationTests(unittest.TestCase):
@@ -13,6 +13,12 @@ class ClassificationTests(unittest.TestCase):
 
     def test_unknown_fallback(self):
         self.assertEqual(classify_file("a.unknownext"), "Unknown/Other")
+
+    def test_supported_files(self):
+        self.assertTrue(is_supported_file("a.pdf"))
+        self.assertTrue(is_supported_file("a.cbz"))
+        self.assertTrue(is_supported_file("a.epub"))
+        self.assertFalse(is_supported_file("a.txt"))
 
 
 if __name__ == "__main__":

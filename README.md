@@ -4,7 +4,8 @@ Aplicación de biblioteca de lectura autoalojada (estilo Kavita simplificado):
 - sin login/registro/autenticación
 - abre directo en la biblioteca
 - escanea rutas locales
-- clasifica archivos por tipo (PDF, GIF, Images, Comics/Archives, EPUB/Books, Unknown/Other)
+- muestra solo archivos compatibles y los abre dentro de la app
+- clasifica archivos por tipo (PDF, GIF, Images, Comics/Archives, EPUB/Books)
 
 ## Requisitos
 
@@ -33,10 +34,16 @@ Aplicación de biblioteca de lectura autoalojada (estilo Kavita simplificado):
 1. En la pantalla principal, agregá una ruta en **Scan path** (ejemplo: `/home/usuario/libros`).
 2. Hacé click en **Add path**.
 3. Hacé click en **Scan library**.
-4. La biblioteca se actualizará con secciones por tipo y cantidad de archivos.
-5. Podés abrir cada ítem desde su detalle con:
-   - **Open in browser**
-   - **Download**
+4. La biblioteca se actualizará mostrando solo archivos compatibles.
+5. Podés abrir cada ítem desde la misma app.
+
+### Formatos con lector integrado
+
+- Imágenes: JPG, JPEG, PNG, WEBP, BMP, TIFF, TIF, AVIF, SVG, ICO
+- GIF
+- PDF
+- EPUB
+- Comics/archives compatibles: CBZ y ZIP con imágenes
 
 ## Variables de entorno opcionales
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .classification import classify_file
+from .classification import READABLE_EXTENSIONS, classify_file, is_supported_file
 from .db import get_connection, now_iso
 
 
@@ -20,6 +20,8 @@ def scan_paths(db_path: Path, configured_paths: list[str]) -> int:
     for raw_path in configured_paths:
         root = Path(raw_path).expanduser().resolve()
         for file_path in _iter_files(root):
+            if not is_supported_file(str(file_path)):
+                continue
             scanned += 1
             section = classify_file(str(file_path))
             conn.execute(
@@ -43,6 +45,14 @@ def scan_paths(db_path: Path, configured_paths: list[str]) -> int:
                     current_time,
                 ),
             )
+    placeholders = ", ".join("?" for _ in READABLE_EXTENSIONS)
+    conn.execute(
+        f"""
+        DELETE FROM items
+        WHERE lower(COALESCE(extension, '')) NOT IN ({placeholders})
+        """,
+        tuple(READABLE_EXTENSIONS),
+    )
     conn.commit()
     conn.close()
     return scanned
