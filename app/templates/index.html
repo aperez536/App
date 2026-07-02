@@ -1,59 +1,151 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Library</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  </head>
-  <body>
-    <main>
-      <h1>Library</h1>
-      <p>Direct access mode (no login).</p>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Biblioteca</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
 
-      <section class="controls">
-        <form method="post" action="{{ url_for('add_path') }}">
-          <label for="path">Scan path</label>
-          <input id="path" name="path" placeholder="/path/to/books" required>
-          <button type="submit">Add path</button>
-        </form>
+<header class="app-header">
+  <a href="{{ url_for('library') }}" class="app-logo">📚 Biblioteca</a>
+  <nav class="app-nav">
+    <a href="{{ url_for('library') }}" class="nav-link {% if not active_section %}active{% endif %}">🏠 Inicio</a>
+    <a href="{{ url_for('browse') }}" class="nav-link">📂 Explorar</a>
+  </nav>
+</header>
 
-        <form method="post" action="{{ url_for('scan') }}">
-          <button type="submit">Scan library</button>
-        </form>
-      </section>
+<main class="app-content">
 
-      <section>
-        <h2>Configured paths</h2>
-        <ul>
-          {% for row in paths %}
-            <li>{{ row['path'] }}</li>
-          {% else %}
-            <li>No paths configured yet.</li>
-          {% endfor %}
-        </ul>
-      </section>
+  {# ── Settings panel ──────────────────────────────────────── #}
+  <details class="settings-panel" {% if not paths %}open{% endif %}>
+    <summary>⚙️ Configuración de biblioteca</summary>
+    <div class="settings-body">
 
-      <section>
-        <h2>Sections</h2>
-        {% for section in sections %}
-          <article>
-            <h3>{{ section['section'] }} ({{ section['item_count'] }})</h3>
-            <ul>
-              {% for item in grouped_items[section['section']] %}
-                <li>
-                  <a href="{{ url_for('item_detail', item_id=item['id']) }}">{{ item['file_name'] }}</a>
-                  <small>{{ item['path'] }}</small>
-                </li>
+      <form method="post" action="{{ url_for('add_path') }}" class="form-row">
+        <label class="form-label" for="path-input">Agregar ruta</label>
+        <input id="path-input" class="form-input" name="path" placeholder="/ruta/a/tus/archivos" required>
+        <button class="btn btn-primary" type="submit">＋ Agregar</button>
+      </form>
+
+      {% if paths %}
+        <div>
+          <p class="sub-heading">Rutas configuradas</p>
+          <div class="path-list">
+            {% for row in paths %}
+              <div class="path-item">
+                <span class="path-item-text">📁 {{ row['path'] }}</span>
+                <div class="path-item-actions">
+                  <a href="{{ url_for('browse', path=row['path']) }}" class="btn btn-secondary btn-sm">Explorar</a>
+                  <form method="post" action="{{ url_for('remove_path') }}" style="display:inline">
+                    <input type="hidden" name="path" value="{{ row['path'] }}">
+                    <button class="btn btn-danger btn-sm" type="submit">✕</button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <form method="post" action="{{ url_for('scan') }}">
+            <button class="btn btn-primary" type="submit">🔍 Escanear biblioteca</button>
+          </form>
+        </div>
+      {% endif %}
+
+    </div>
+  </details>
+
+  {# ── Items view (filtered by section) ────────────────────── #}
+  {% if active_section %}
+
+    {% set section_icons = {
+      "Images":         "🖼️",
+      "GIF":            "🎞️",
+      "PDF":            "📄",
+      "Comics/Archives":"📦",
+      "EPUB/Books":     "📚",
+      "Unknown/Other":  "📁"
+    } %}
+
+    <div class="items-header">
+      <a href="{{ url_for('library') }}" class="btn btn-ghost btn-sm" data-back>← Volver</a>
+      <span class="items-title">
+        {{ section_icons.get(active_section, '📁') }} {{ active_section }}
+        <span style="color:var(--text-muted);font-weight:400;font-size:.9rem">({{ items|length }})</span>
+      </span>
+    </div>
+
+    {% if items %}
+      <div class="cards-grid">
+        {% for item in items %}
+          {% set ext = item['extension'] or '' %}
+          {% set is_img = ext in ['.jpg','.jpeg','.png','.webp','.gif','.bmp','.svg','.avif','.tif','.tiff','.ico'] %}
+          <a class="media-card" href="{{ url_for('item_detail', item_id=item['id']) }}" tabindex="0">
+            <div class="media-thumb">
+              {% if is_img %}
+                <img src="{{ url_for('view_item', item_id=item['id']) }}"
+                     alt="{{ item['file_name'] }}"
+                     loading="lazy">
+              {% elif item['section'] == 'PDF' %}
+                📄
+              {% elif item['section'] == 'EPUB/Books' %}
+                📚
+              {% elif item['section'] == 'Comics/Archives' %}
+                📦
               {% else %}
-                <li>No items.</li>
-              {% endfor %}
-            </ul>
-          </article>
-        {% else %}
-          <p>No indexed items yet. Add a path and run a scan.</p>
+                📁
+              {% endif %}
+            </div>
+            <div class="media-info">
+              <div class="media-name" title="{{ item['file_name'] }}">{{ item['file_name'] }}</div>
+              <div class="media-meta">{{ (ext[1:] or '?')|upper }}</div>
+            </div>
+          </a>
         {% endfor %}
-      </section>
-    </main>
-  </body>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <span class="empty-icon">🔍</span>
+        <p class="empty-text">No hay ítems en esta sección.</p>
+      </div>
+    {% endif %}
+
+  {# ── Sections overview ───────────────────────────────────── #}
+  {% else %}
+
+    {% set section_icons = {
+      "Images":         "🖼️",
+      "GIF":            "🎞️",
+      "PDF":            "📄",
+      "Comics/Archives":"📦",
+      "EPUB/Books":     "📚",
+      "Unknown/Other":  "📁"
+    } %}
+
+    {% if sections %}
+      <div class="section-grid">
+        {% for s in sections %}
+          <a class="section-card" href="{{ url_for('library', section=s['section']) }}" tabindex="0">
+            <span class="section-icon">{{ section_icons.get(s['section'], '📁') }}</span>
+            <span class="section-count">{{ s['item_count'] }}</span>
+            <span class="section-name">{{ s['section'] }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <span class="empty-icon">📂</span>
+        <p class="empty-text">No hay ítems aún.<br>Agregá una ruta y hacé clic en <strong>Escanear biblioteca</strong>.</p>
+      </div>
+    {% endif %}
+
+  {% endif %}
+
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
 </html>

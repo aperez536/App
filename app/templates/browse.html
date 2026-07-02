@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Explorar – Biblioteca</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="app-header">
+  <a href="{{ url_for('library') }}" class="app-logo">📚 Biblioteca</a>
+  <nav class="app-nav">
+    <a href="{{ url_for('library') }}" class="nav-link">🏠 Inicio</a>
+    <a href="{{ url_for('browse') }}" class="nav-link active">📂 Explorar</a>
+  </nav>
+</header>
+
+<main class="app-content">
+
+  {# ── No path selected: show configured roots ─────────────── #}
+  {% if not browse_path %}
+
+    <div class="items-header" style="margin-bottom:1.25rem">
+      <span class="items-title">📂 Explorar archivos</span>
+    </div>
+
+    {% if configured_paths %}
+      <p class="sub-heading" style="margin-bottom:.75rem">Fuentes de biblioteca</p>
+      <div class="folders-grid">
+        {% for cp in configured_paths %}
+          <a class="folder-card" href="{{ url_for('browse', path=cp) }}" tabindex="0">
+            <span class="folder-icon">🗂️</span>
+            <div class="folder-info">
+              <div class="folder-name" title="{{ cp }}">{{ cp.split('/')[-1] or cp }}</div>
+              <div class="folder-count">{{ cp }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <span class="empty-icon">📂</span>
+        <p class="empty-text">No hay rutas configuradas.<br>
+          <a href="{{ url_for('library') }}" class="btn btn-primary" style="margin-top:.75rem;display:inline-flex">
+            ⚙️ Configurar rutas
+          </a>
+        </p>
+      </div>
+    {% endif %}
+
+  {# ── Directory listing ───────────────────────────────────── #}
+  {% else %}
+
+    {# Breadcrumb #}
+    <nav class="breadcrumb" aria-label="breadcrumb">
+      <a class="breadcrumb-item" href="{{ url_for('browse') }}">🏠</a>
+      {% for crumb in breadcrumbs %}
+        <span class="breadcrumb-sep">›</span>
+        {% if not loop.last %}
+          <a class="breadcrumb-item" href="{{ url_for('browse', path=crumb['path']) }}">{{ crumb['name'] }}</a>
+        {% else %}
+          <span class="breadcrumb-item active">{{ crumb['name'] }}</span>
+        {% endif %}
+      {% endfor %}
+    </nav>
+
+    {# Back button #}
+    {% if parent_path %}
+      <div style="margin-bottom:1rem">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('browse', path=parent_path) }}" data-back>← Subir nivel</a>
+      </div>
+    {% else %}
+      <div style="margin-bottom:1rem">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('browse') }}" data-back>← Raíz</a>
+      </div>
+    {% endif %}
+
+    {# Subdirectories #}
+    {% if dirs %}
+      <p class="sub-heading">Carpetas ({{ dirs|length }})</p>
+      <div class="folders-grid">
+        {% for d in dirs %}
+          <a class="folder-card" href="{{ url_for('browse', path=d['path']) }}" tabindex="0">
+            <span class="folder-icon">📁</span>
+            <div class="folder-info">
+              <div class="folder-name" title="{{ d['name'] }}">{{ d['name'] }}</div>
+              <div class="folder-count">{{ d['count'] }} elemento(s)</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {# Files #}
+    {% if files %}
+      <p class="sub-heading" style="margin-top:{% if dirs %}1.25rem{% else %}0{% endif %}">Archivos ({{ files|length }})</p>
+      <div class="cards-grid">
+        {% for f in files %}
+          <a class="media-card"
+             href="{{ url_for('file_serve', path=f['path']) }}"
+             target="_blank"
+             rel="noopener"
+             tabindex="0">
+            <div class="media-thumb">
+              {% if f['is_image'] %}
+                <img src="{{ url_for('file_serve', path=f['path']) }}"
+                     alt="{{ f['name'] }}"
+                     loading="lazy">
+              {% elif f['section'] == 'PDF' %}
+                📄
+              {% elif f['section'] == 'EPUB/Books' %}
+                📚
+              {% elif f['section'] == 'Comics/Archives' %}
+                📦
+              {% else %}
+                📁
+              {% endif %}
+            </div>
+            <div class="media-info">
+              <div class="media-name" title="{{ f['name'] }}">{{ f['name'] }}</div>
+              <div class="media-meta">
+                {{ (f['extension'][1:] or '?')|upper }}
+                {% set sz = f['size'] %}
+                ·
+                {% if sz >= 1048576 %}{{ '%.1f'|format(sz/1048576) }} MB
+                {% elif sz >= 1024 %}{{ '%.1f'|format(sz/1024) }} KB
+                {% else %}{{ sz }} B{% endif %}
+              </div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if not dirs and not files %}
+      <div class="empty-state">
+        <span class="empty-icon">📂</span>
+        <p class="empty-text">Esta carpeta está vacía.</p>
+      </div>
+    {% endif %}
+
+  {% endif %}
+
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
