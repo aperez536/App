@@ -126,6 +126,25 @@ def _load_epub_book(file_path: Path) -> dict:
         return {"chapters": chapters}
 
 
+_EPUB_INJECT_STYLE = (
+    "<style>"
+    "html,body{max-width:100%!important;width:100%!important;}"
+    "</style>"
+)
+_EPUB_INJECT_SCRIPT = (
+    "<script>"
+    "(function(){"
+    "document.addEventListener('keydown',function(e){"
+    "var k=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Escape','Backspace'];"
+    "if(k.indexOf(e.key)!==-1){"
+    "try{window.parent.postMessage({type:'epub-key',key:e.key},window.location.origin);}catch(x){}"
+    "}"
+    "});"
+    "})();"
+    "</script>"
+)
+
+
 def _rewrite_epub_html(file_path: Path, html: str, current_href: str) -> str:
     base_dir = posixpath.dirname(current_href)
     pattern = re.compile(
@@ -157,7 +176,23 @@ def _rewrite_epub_html(file_path: Path, html: str, current_href: str) -> str:
             rewritten = url_for("read_epub_asset", path=str(file_path), asset=resolved)
         return f"{attr}{quote}{rewritten}{quote}"
 
-    return pattern.sub(replace, html)
+    html = pattern.sub(replace, html)
+
+    # Inject full-width CSS before </head> (or prepend if no <head>)
+    head_close = re.search(r"</head\s*>", html, re.IGNORECASE)
+    if head_close:
+        html = html[: head_close.start()] + _EPUB_INJECT_STYLE + html[head_close.start() :]
+    else:
+        html = _EPUB_INJECT_STYLE + html
+
+    # Inject keyboard-forwarding script before </body> (or append if no </body>)
+    body_close = re.search(r"</body\s*>", html, re.IGNORECASE)
+    if body_close:
+        html = html[: body_close.start()] + _EPUB_INJECT_SCRIPT + html[body_close.start() :]
+    else:
+        html += _EPUB_INJECT_SCRIPT
+
+    return html
 
 
 def _get_comic_pages(file_path: Path) -> list[str]:
@@ -472,6 +507,16 @@ def create_app() -> Flask:
     @app.post("/scan")
     def scan():
         configured = _get_configured_paths(app.config["DB_PATH"])
+        scan_paths(app.config["DB_PATH"], configured)
+        return redirect(url_for("library"))
+
+    @app.post("/scan/clean")
+    def scan_clean():
+        configured = _get_configured_paths(app.config["DB_PATH"])
+        conn = get_connection(app.config["DB_PATH"])
+        conn.execute("DELETE FROM items")
+        conn.commit()
+        conn.close()
         scan_paths(app.config["DB_PATH"], configured)
         return redirect(url_for("library"))
 

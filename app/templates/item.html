@@ -66,11 +66,11 @@
         <div class="viewer-epub-main">
           <div class="viewer-epub-toolbar">
             {% if epub['previous_url'] %}
-              <a class="btn btn-secondary btn-sm" href="{{ epub['previous_url'] }}">← Anterior</a>
+              <a class="btn btn-secondary btn-sm" href="{{ epub['previous_url'] }}" data-epub-prev>← Anterior</a>
             {% endif %}
             <span class="viewer-epub-current">{{ epub['current_label'] }}</span>
             {% if epub['next_url'] %}
-              <a class="btn btn-secondary btn-sm" href="{{ epub['next_url'] }}">Siguiente →</a>
+              <a class="btn btn-secondary btn-sm" href="{{ epub['next_url'] }}" data-epub-next>Siguiente →</a>
             {% endif %}
           </div>
           <iframe class="viewer-epub-frame" src="{{ epub['document_url'] }}" title="{{ epub['current_label'] }}"></iframe>
