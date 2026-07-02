@@ -27,7 +27,7 @@ class ScannerTests(unittest.TestCase):
             self.assertEqual(second_count, 3)
 
             conn = get_connection(db_path)
-            total = conn.execute("SELECT COUNT(*) AS c FROM items").fetchone()["c"]
+            total = conn.execute("SELECT COUNT(*) AS total_count FROM items").fetchone()["total_count"]
             sections = {
                 row["section"]: row["count"]
                 for row in conn.execute(
