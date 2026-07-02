@@ -9,10 +9,10 @@
 <body>
 
 <header class="app-header">
-  <a href="{{ url_for('library') }}" class="app-logo">📚 Biblioteca</a>
+  <a href="{{ url_for('library', view=view_mode) }}" class="app-logo">📚 Biblioteca</a>
   <nav class="app-nav">
-    <a href="{{ url_for('library') }}" class="nav-link {% if not active_section %}active{% endif %}">🏠 Inicio</a>
-    <a href="{{ url_for('browse') }}" class="nav-link">📂 Explorar</a>
+    <a href="{{ url_for('library', view=view_mode) }}" class="nav-link {% if not active_section %}active{% endif %}">🏠 Inicio</a>
+    <a href="{{ url_for('browse', view=view_mode) }}" class="nav-link">📂 Explorar</a>
   </nav>
 </header>
 
@@ -71,15 +71,29 @@
     } %}
 
     <div class="items-header">
-      <a href="{{ url_for('library') }}" class="btn btn-ghost btn-sm" data-back>← Volver</a>
+      <a href="{{ url_for('library', view=view_mode) }}" class="btn btn-ghost btn-sm" data-back>← Volver</a>
       <span class="items-title">
         {{ section_icons.get(active_section, '📁') }} {{ active_section }}
         <span style="color:var(--text-muted);font-weight:400;font-size:.9rem">({{ items|length }})</span>
       </span>
+      <div class="view-toggle-group" aria-label="Cambiar vista">
+        <a
+          class="view-toggle {% if view_mode == 'grid' %}active{% endif %}"
+          href="{{ url_for('library', section=active_section, view='grid') }}"
+          aria-pressed="{{ 'true' if view_mode == 'grid' else 'false' }}">
+          Cuadrícula
+        </a>
+        <a
+          class="view-toggle {% if view_mode == 'list' %}active{% endif %}"
+          href="{{ url_for('library', section=active_section, view='list') }}"
+          aria-pressed="{{ 'true' if view_mode == 'list' else 'false' }}">
+          Lista
+        </a>
+      </div>
     </div>
 
     {% if items %}
-      <div class="cards-grid">
+      <div class="cards-grid {% if view_mode == 'list' %}list-view{% endif %}">
         {% for item in items %}
           {% set ext = item['extension'] or '' %}
           {% set is_img = ext in ['.jpg','.jpeg','.png','.webp','.gif','.bmp','.svg','.avif','.tif','.tiff','.ico'] %}
@@ -126,9 +140,26 @@
     } %}
 
     {% if sections %}
-      <div class="section-grid">
+      <div class="view-toolbar">
+        <span class="items-title">Secciones</span>
+        <div class="view-toggle-group" aria-label="Cambiar vista">
+          <a
+            class="view-toggle {% if view_mode == 'grid' %}active{% endif %}"
+            href="{{ url_for('library', view='grid') }}"
+            aria-pressed="{{ 'true' if view_mode == 'grid' else 'false' }}">
+            Cuadrícula
+          </a>
+          <a
+            class="view-toggle {% if view_mode == 'list' %}active{% endif %}"
+            href="{{ url_for('library', view='list') }}"
+            aria-pressed="{{ 'true' if view_mode == 'list' else 'false' }}">
+            Lista
+          </a>
+        </div>
+      </div>
+      <div class="section-grid {% if view_mode == 'list' %}list-view{% endif %}">
         {% for s in sections %}
-          <a class="section-card" href="{{ url_for('library', section=s['section']) }}" tabindex="0">
+          <a class="section-card" href="{{ url_for('library', section=s['section'], view=view_mode) }}" tabindex="0">
             <span class="section-icon">{{ section_icons.get(s['section'], '📁') }}</span>
             <span class="section-count">{{ s['item_count'] }}</span>
             <span class="section-name">{{ s['section'] }}</span>

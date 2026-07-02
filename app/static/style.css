@@ -232,6 +232,69 @@ body {
 }
 .section-card:focus-visible { box-shadow: var(--focus); }
 .section-card.active { border-color: var(--accent); background: var(--surface-2); }
+.section-grid.list-view,
+.cards-grid.list-view,
+.folders-grid.list-view {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: .35rem;
+  align-items: stretch;
+}
+
+.section-grid.list-view {
+  grid-auto-columns: minmax(220px, 260px);
+}
+
+.section-grid.list-view .section-card {
+  min-height: 168px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1rem;
+}
+
+.cards-grid.list-view {
+  grid-auto-columns: minmax(280px, 320px);
+}
+
+.cards-grid.list-view .media-card {
+  flex-direction: row;
+  min-height: 118px;
+}
+
+.cards-grid.list-view .media-thumb {
+  width: 88px;
+  min-width: 88px;
+  aspect-ratio: auto;
+  font-size: 2rem;
+}
+
+.cards-grid.list-view .media-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cards-grid.list-view .media-name {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.folders-grid.list-view {
+  grid-auto-columns: minmax(280px, 340px);
+}
+
+.section-grid.list-view .section-card,
+.cards-grid.list-view .media-card,
+.folders-grid.list-view .folder-card {
+  scroll-snap-align: start;
+}
 
 .section-icon  { font-size: 2rem; line-height: 1; }
 .section-name  { font-size: .82rem; font-weight: 600; color: var(--text-muted); }
@@ -246,6 +309,49 @@ body {
   margin-bottom: 1rem;
 }
 .items-title { font-size: 1.15rem; font-weight: 600; }
+
+.view-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.view-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  margin-left: auto;
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: .42rem .85rem;
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: .84rem;
+  font-weight: 600;
+}
+
+.view-toggle:hover,
+.view-toggle:focus,
+.view-toggle.active {
+  background: var(--surface-2);
+  color: var(--text);
+  outline: none;
+}
+
+.view-toggle:focus-visible { box-shadow: var(--focus); }
 
 /* ── Media cards grid ─────────────────────────────────────── */
 .cards-grid {

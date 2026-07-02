@@ -32,6 +32,11 @@ SUPPORTED_ITEM_EXTENSIONS = tuple(sorted(READABLE_EXTENSIONS))
 SUPPORTED_ITEM_PLACEHOLDERS = ", ".join("?" for _ in SUPPORTED_ITEM_EXTENSIONS)
 
 
+def _get_view_mode(raw_value: str) -> str:
+    value = (raw_value or "").strip().lower()
+    return value if value in {"grid", "list"} else "grid"
+
+
 def _is_image_ext(ext: str) -> bool:
     return ext.lower() in INLINE_IMAGE_EXTENSIONS
 
@@ -312,6 +317,7 @@ def create_app() -> Flask:
         ).fetchall()
 
         active_section = request.args.get("section", "").strip()
+        view_mode = _get_view_mode(request.args.get("view", "grid"))
         items = []
         if active_section:
             items = conn.execute(
@@ -332,6 +338,7 @@ def create_app() -> Flask:
             sections=sections,
             items=items,
             active_section=active_section,
+            view_mode=view_mode,
         )
 
     @app.post("/paths")
@@ -360,6 +367,7 @@ def create_app() -> Flask:
     @app.get("/browse")
     def browse():
         browse_path_str = request.args.get("path", "").strip()
+        view_mode = _get_view_mode(request.args.get("view", "grid"))
         configured = _get_configured_paths(app.config["DB_PATH"])
 
         if not browse_path_str:
@@ -371,6 +379,7 @@ def create_app() -> Flask:
                 files=[],
                 configured_paths=configured,
                 breadcrumbs=[],
+                view_mode=view_mode,
             )
 
         target, _ = resolve_allowed_target(browse_path_str, expect_dir=True)
@@ -438,6 +447,7 @@ def create_app() -> Flask:
             files=files,
             configured_paths=configured,
             breadcrumbs=breadcrumbs,
+            view_mode=view_mode,
         )
 
     @app.get("/read")

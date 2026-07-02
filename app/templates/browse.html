@@ -9,10 +9,10 @@
 <body>
 
 <header class="app-header">
-  <a href="{{ url_for('library') }}" class="app-logo">📚 Biblioteca</a>
+  <a href="{{ url_for('library', view=view_mode) }}" class="app-logo">📚 Biblioteca</a>
   <nav class="app-nav">
-    <a href="{{ url_for('library') }}" class="nav-link">🏠 Inicio</a>
-    <a href="{{ url_for('browse') }}" class="nav-link active">📂 Explorar</a>
+    <a href="{{ url_for('library', view=view_mode) }}" class="nav-link">🏠 Inicio</a>
+    <a href="{{ url_for('browse', view=view_mode) }}" class="nav-link active">📂 Explorar</a>
   </nav>
 </header>
 
@@ -22,13 +22,27 @@
 
     <div class="items-header" style="margin-bottom:1.25rem">
       <span class="items-title">📂 Explorar archivos</span>
+      <div class="view-toggle-group" aria-label="Cambiar vista">
+        <a
+          class="view-toggle {% if view_mode == 'grid' %}active{% endif %}"
+          href="{{ url_for('browse', view='grid') }}"
+          aria-pressed="{{ 'true' if view_mode == 'grid' else 'false' }}">
+          Cuadrícula
+        </a>
+        <a
+          class="view-toggle {% if view_mode == 'list' %}active{% endif %}"
+          href="{{ url_for('browse', view='list') }}"
+          aria-pressed="{{ 'true' if view_mode == 'list' else 'false' }}">
+          Lista
+        </a>
+      </div>
     </div>
 
     {% if configured_paths %}
       <p class="sub-heading" style="margin-bottom:.75rem">Fuentes de biblioteca</p>
-      <div class="folders-grid">
+      <div class="folders-grid {% if view_mode == 'list' %}list-view{% endif %}">
         {% for cp in configured_paths %}
-          <a class="folder-card" href="{{ url_for('browse', path=cp) }}" tabindex="0">
+          <a class="folder-card" href="{{ url_for('browse', path=cp, view=view_mode) }}" tabindex="0">
             <span class="folder-icon">🗂️</span>
             <div class="folder-info">
               <div class="folder-name" title="{{ cp }}">{{ cp.split('/')[-1] or cp }}</div>
@@ -41,7 +55,7 @@
       <div class="empty-state">
         <span class="empty-icon">📂</span>
         <p class="empty-text">No hay rutas configuradas.<br>
-          <a href="{{ url_for('library') }}" class="btn btn-primary" style="margin-top:.75rem;display:inline-flex">
+          <a href="{{ url_for('library', view=view_mode) }}" class="btn btn-primary" style="margin-top:.75rem;display:inline-flex">
             ⚙️ Configurar rutas
           </a>
         </p>
@@ -51,11 +65,11 @@
   {% else %}
 
     <nav class="breadcrumb" aria-label="breadcrumb">
-      <a class="breadcrumb-item" href="{{ url_for('browse') }}">🏠</a>
+      <a class="breadcrumb-item" href="{{ url_for('browse', view=view_mode) }}">🏠</a>
       {% for crumb in breadcrumbs %}
         <span class="breadcrumb-sep">›</span>
         {% if not loop.last %}
-          <a class="breadcrumb-item" href="{{ url_for('browse', path=crumb['path']) }}">{{ crumb['name'] }}</a>
+          <a class="breadcrumb-item" href="{{ url_for('browse', path=crumb['path'], view=view_mode) }}">{{ crumb['name'] }}</a>
         {% else %}
           <span class="breadcrumb-item active">{{ crumb['name'] }}</span>
         {% endif %}
@@ -64,19 +78,37 @@
 
     {% if parent_path %}
       <div style="margin-bottom:1rem">
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('browse', path=parent_path) }}" data-back>← Subir nivel</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('browse', path=parent_path, view=view_mode) }}" data-back>← Subir nivel</a>
       </div>
     {% else %}
       <div style="margin-bottom:1rem">
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('browse') }}" data-back>← Raíz</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('browse', view=view_mode) }}" data-back>← Raíz</a>
       </div>
     {% endif %}
 
+    <div class="view-toolbar" style="margin-bottom:1rem">
+      <span class="items-title">Vista</span>
+      <div class="view-toggle-group" aria-label="Cambiar vista">
+        <a
+          class="view-toggle {% if view_mode == 'grid' %}active{% endif %}"
+          href="{{ url_for('browse', path=browse_path, view='grid') }}"
+          aria-pressed="{{ 'true' if view_mode == 'grid' else 'false' }}">
+          Cuadrícula
+        </a>
+        <a
+          class="view-toggle {% if view_mode == 'list' %}active{% endif %}"
+          href="{{ url_for('browse', path=browse_path, view='list') }}"
+          aria-pressed="{{ 'true' if view_mode == 'list' else 'false' }}">
+          Lista
+        </a>
+      </div>
+    </div>
+
     {% if dirs %}
       <p class="sub-heading">Carpetas ({{ dirs|length }})</p>
-      <div class="folders-grid">
+      <div class="folders-grid {% if view_mode == 'list' %}list-view{% endif %}">
         {% for d in dirs %}
-          <a class="folder-card" href="{{ url_for('browse', path=d['path']) }}" tabindex="0">
+          <a class="folder-card" href="{{ url_for('browse', path=d['path'], view=view_mode) }}" tabindex="0">
             <span class="folder-icon">📁</span>
             <div class="folder-info">
               <div class="folder-name" title="{{ d['name'] }}">{{ d['name'] }}</div>
@@ -89,7 +121,7 @@
 
     {% if files %}
       <p class="sub-heading" style="margin-top:{% if dirs %}1.25rem{% else %}0{% endif %}">Archivos compatibles ({{ files|length }})</p>
-      <div class="cards-grid">
+      <div class="cards-grid {% if view_mode == 'list' %}list-view{% endif %}">
         {% for f in files %}
           <a class="media-card" href="{{ url_for('read_file', path=f['path']) }}" tabindex="0">
             <div class="media-thumb">

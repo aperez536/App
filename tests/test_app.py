@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from app import create_app
 from app.db import add_scan_path
+from app.scanner import scan_paths
 
 
 CONTAINER_XML = """<?xml version='1.0'?>
@@ -72,6 +73,49 @@ class AppRoutesTests(unittest.TestCase):
             self.assertNotIn('notes.txt', html)
             self.assertIn('/read?path=', html)
             self.assertNotIn('target="_blank"', html)
+
+    def test_library_supports_list_view(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            library_dir = tmp_path / 'library'
+            library_dir.mkdir()
+            (library_dir / 'guide.pdf').write_bytes(b'%PDF')
+
+            client, db_path = self.create_client(tmp_path)
+            add_scan_path(str(library_dir), db_path)
+            scan_paths(db_path, [str(library_dir)])
+
+            response = client.get('/', query_string={'section': 'PDF', 'view': 'list'})
+            html = response.get_data(as_text=True)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('cards-grid list-view', html)
+            self.assertIn('href="/?section=PDF&amp;view=grid"', html)
+            self.assertIn('href="/browse?view=list"', html)
+
+    def test_browse_supports_list_view(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            library_dir = tmp_path / 'library'
+            child_dir = library_dir / 'sub'
+            library_dir.mkdir()
+            child_dir.mkdir()
+            (library_dir / 'guide.pdf').write_bytes(b'%PDF')
+
+            client, db_path = self.create_client(tmp_path)
+            add_scan_path(str(library_dir), db_path)
+
+            response = client.get(
+                '/browse',
+                query_string={'path': str(library_dir), 'view': 'list'},
+            )
+            html = response.get_data(as_text=True)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('folders-grid list-view', html)
+            self.assertIn('cards-grid list-view', html)
+            self.assertIn(f'href="/browse?path={library_dir}%2Fsub&amp;view=list"', html)
+            self.assertIn(f'href="/browse?view=list"', html)
 
     def test_read_epub_inside_app(self):
         with tempfile.TemporaryDirectory() as tmp:
