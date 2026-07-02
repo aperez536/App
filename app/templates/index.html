@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Library</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <main>
+      <h1>Library</h1>
+      <p>Direct access mode (no login).</p>
+
+      <section class="controls">
+        <form method="post" action="{{ url_for('add_path') }}">
+          <label for="path">Scan path</label>
+          <input id="path" name="path" placeholder="/path/to/books" required>
+          <button type="submit">Add path</button>
+        </form>
+
+        <form method="post" action="{{ url_for('scan') }}">
+          <button type="submit">Scan library</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Configured paths</h2>
+        <ul>
+          {% for row in paths %}
+            <li>{{ row['path'] }}</li>
+          {% else %}
+            <li>No paths configured yet.</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section>
+        <h2>Sections</h2>
+        {% for section in sections %}
+          <article>
+            <h3>{{ section['section'] }} ({{ section['item_count'] }})</h3>
+            <ul>
+              {% for item in grouped_items[section['section']] %}
+                <li>
+                  <a href="{{ url_for('item_detail', item_id=item['id']) }}">{{ item['file_name'] }}</a>
+                  <small>{{ item['path'] }}</small>
+                </li>
+              {% else %}
+                <li>No items.</li>
+              {% endfor %}
+            </ul>
+          </article>
+        {% else %}
+          <p>No indexed items yet. Add a path and run a scan.</p>
+        {% endfor %}
+      </section>
+    </main>
+  </body>
+</html>
