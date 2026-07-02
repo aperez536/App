@@ -11,7 +11,6 @@ from .scanner import scan_paths
 SECTION_MIME_FALLBACK = {
     "PDF": "application/pdf",
     "GIF": "image/gif",
-    "Images": "image/*",
     "EPUB/Books": "application/epub+zip",
 }
 
