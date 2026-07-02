@@ -19,7 +19,7 @@ def scan_paths(db_path: Path, configured_paths: list[str]) -> int:
 
     for raw_path in configured_paths:
         root = Path(raw_path).expanduser().resolve()
-        for file_path in _iter_files(root) or []:
+        for file_path in _iter_files(root):
             scanned += 1
             section = classify_file(str(file_path))
             conn.execute(

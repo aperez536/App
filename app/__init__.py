@@ -8,6 +8,14 @@ from .db import DEFAULT_DB_PATH, add_scan_path, get_connection, init_db
 from .scanner import scan_paths
 
 
+SECTION_MIME_FALLBACK = {
+    "PDF": "application/pdf",
+    "GIF": "image/gif",
+    "Images": "image/*",
+    "EPUB/Books": "application/epub+zip",
+}
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config["DB_PATH"] = Path(os.environ.get("APP_DB_PATH", DEFAULT_DB_PATH))
@@ -77,7 +85,9 @@ def create_app() -> Flask:
         if not file_path.exists() or not file_path.is_file():
             abort(404)
 
-        mime_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+        mime_type = mimetypes.guess_type(str(file_path))[0] or SECTION_MIME_FALLBACK.get(
+            item["section"], "application/octet-stream"
+        )
         return send_file(file_path, mimetype=mime_type, as_attachment=False, download_name=item["file_name"])
 
     @app.get("/items/<int:item_id>/download")
