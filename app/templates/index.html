@@ -49,8 +49,13 @@
         </div>
 
         <div class="form-row">
-          <form method="post" action="{{ url_for('scan') }}">
+          <form method="post" action="{{ url_for('scan') }}" style="display:inline">
             <button class="btn btn-primary" type="submit">🔍 Escanear biblioteca</button>
+          </form>
+          <form method="post" action="{{ url_for('scan_clean') }}" style="display:inline">
+            <button class="btn btn-secondary" type="submit">
+              🧹 Limpiar caché y reescanear
+            </button>
           </form>
         </div>
       {% endif %}

@@ -131,4 +131,32 @@
       first.focus();
     }
   });
+
+  /* ── EPUB iframe keyboard forwarding ───────────────────── */
+  window.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'epub-key') return;
+    var key = e.data.key;
+    switch (key) {
+      case 'ArrowLeft': {
+        var prevBtn = document.querySelector('[data-epub-prev]');
+        if (prevBtn) { prevBtn.focus(); prevBtn.click(); }
+        break;
+      }
+      case 'ArrowRight': {
+        var nextBtn = document.querySelector('[data-epub-next]');
+        if (nextBtn) { nextBtn.focus(); nextBtn.click(); }
+        break;
+      }
+      case 'ArrowUp':
+        navigate('up');
+        break;
+      case 'ArrowDown':
+        navigate('down');
+        break;
+      case 'Escape':
+      case 'Backspace':
+        goBack();
+        break;
+    }
+  });
 })();
