@@ -18,7 +18,6 @@
 
 <main class="app-content">
 
-  {# ── No path selected: show configured roots ─────────────── #}
   {% if not browse_path %}
 
     <div class="items-header" style="margin-bottom:1.25rem">
@@ -49,10 +48,8 @@
       </div>
     {% endif %}
 
-  {# ── Directory listing ───────────────────────────────────── #}
   {% else %}
 
-    {# Breadcrumb #}
     <nav class="breadcrumb" aria-label="breadcrumb">
       <a class="breadcrumb-item" href="{{ url_for('browse') }}">🏠</a>
       {% for crumb in breadcrumbs %}
@@ -65,7 +62,6 @@
       {% endfor %}
     </nav>
 
-    {# Back button #}
     {% if parent_path %}
       <div style="margin-bottom:1rem">
         <a class="btn btn-ghost btn-sm" href="{{ url_for('browse', path=parent_path) }}" data-back>← Subir nivel</a>
@@ -76,7 +72,6 @@
       </div>
     {% endif %}
 
-    {# Subdirectories #}
     {% if dirs %}
       <p class="sub-heading">Carpetas ({{ dirs|length }})</p>
       <div class="folders-grid">
@@ -92,16 +87,11 @@
       </div>
     {% endif %}
 
-    {# Files #}
     {% if files %}
-      <p class="sub-heading" style="margin-top:{% if dirs %}1.25rem{% else %}0{% endif %}">Archivos ({{ files|length }})</p>
+      <p class="sub-heading" style="margin-top:{% if dirs %}1.25rem{% else %}0{% endif %}">Archivos compatibles ({{ files|length }})</p>
       <div class="cards-grid">
         {% for f in files %}
-          <a class="media-card"
-             href="{{ url_for('file_serve', path=f['path']) }}"
-             target="_blank"
-             rel="noopener"
-             tabindex="0">
+          <a class="media-card" href="{{ url_for('read_file', path=f['path']) }}" tabindex="0">
             <div class="media-thumb">
               {% if f['is_image'] %}
                 <img src="{{ url_for('file_serve', path=f['path']) }}"
@@ -136,7 +126,7 @@
     {% if not dirs and not files %}
       <div class="empty-state">
         <span class="empty-icon">📂</span>
-        <p class="empty-text">Esta carpeta está vacía.</p>
+        <p class="empty-text">Esta carpeta no tiene archivos compatibles.</p>
       </div>
     {% endif %}
 

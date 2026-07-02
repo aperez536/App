@@ -23,8 +23,8 @@ class ScannerTests(unittest.TestCase):
             first_count = scan_paths(db_path, [str(content_dir)])
             second_count = scan_paths(db_path, [str(content_dir)])
 
-            self.assertEqual(first_count, 3)
-            self.assertEqual(second_count, 3)
+            self.assertEqual(first_count, 2)
+            self.assertEqual(second_count, 2)
 
             conn = get_connection(db_path)
             total = conn.execute("SELECT COUNT(*) AS total_count FROM items").fetchone()["total_count"]
@@ -36,10 +36,10 @@ class ScannerTests(unittest.TestCase):
             }
             conn.close()
 
-            self.assertEqual(total, 3)
+            self.assertEqual(total, 2)
             self.assertEqual(sections["PDF"], 1)
             self.assertEqual(sections["GIF"], 1)
-            self.assertEqual(sections["Unknown/Other"], 1)
+            self.assertNotIn("Unknown/Other", sections)
 
 
 if __name__ == "__main__":
