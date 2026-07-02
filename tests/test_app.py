@@ -114,7 +114,7 @@ class AppRoutesTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn('folders-grid list-view', html)
             self.assertIn('cards-grid list-view', html)
-            self.assertIn(f'href="/browse?path={library_dir}%2Fsub&amp;view=list"', html)
+            self.assertIn(f'href="/browse?path={library_dir}/sub&amp;view=list"', html)
             self.assertIn(f'href="/browse?view=list"', html)
 
     def test_read_epub_inside_app(self):
