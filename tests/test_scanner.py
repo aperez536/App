@@ -28,6 +28,10 @@ class ScannerTests(unittest.TestCase):
 
             conn = get_connection(db_path)
             total = conn.execute("SELECT COUNT(*) AS total_count FROM items").fetchone()["total_count"]
+            mtime_values = [
+                row["file_mtime_ns"]
+                for row in conn.execute("SELECT file_mtime_ns FROM items").fetchall()
+            ]
             sections = {
                 row["section"]: row["count"]
                 for row in conn.execute(
@@ -37,6 +41,7 @@ class ScannerTests(unittest.TestCase):
             conn.close()
 
             self.assertEqual(total, 2)
+            self.assertTrue(all(value and value > 0 for value in mtime_values))
             self.assertEqual(sections["PDF"], 1)
             self.assertEqual(sections["GIF"], 1)
             self.assertNotIn("Unknown/Other", sections)

@@ -123,7 +123,7 @@
       <p class="sub-heading" style="margin-top:{% if dirs %}1.25rem{% else %}0{% endif %}">Archivos compatibles ({{ files|length }})</p>
       <div class="cards-grid {% if view_mode == 'list' %}list-view{% endif %}">
         {% for f in files %}
-          <a class="media-card" href="{{ url_for('read_file', path=f['path']) }}" tabindex="0">
+          <a class="media-card" href="{{ url_for('read_file', path=f['path'], from_dir=browse_path, view=view_mode) }}" tabindex="0">
             <div class="media-thumb">
               {% if f['is_image'] %}
                 <img src="{{ url_for('file_serve', path=f['path']) }}"

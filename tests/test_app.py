@@ -72,6 +72,7 @@ class AppRoutesTests(unittest.TestCase):
             self.assertIn('comic.cbz', html)
             self.assertNotIn('notes.txt', html)
             self.assertIn('/read?path=', html)
+            self.assertIn(f'from_dir={library_dir}', html)
             self.assertNotIn('target="_blank"', html)
 
     def test_library_supports_list_view(self):
@@ -92,6 +93,7 @@ class AppRoutesTests(unittest.TestCase):
             self.assertIn('cards-grid list-view', html)
             self.assertIn('href="/?section=PDF&amp;view=grid"', html)
             self.assertIn('href="/browse?view=list"', html)
+            self.assertIn('href="/items/1?section=PDF&amp;view=list"', html)
 
     def test_browse_supports_list_view(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -165,6 +167,30 @@ class AppRoutesTests(unittest.TestCase):
             self.assertIn('/read/archive-image?path=', html)
             self.assertIn('Página 1', html)
             self.assertIn('Página 2', html)
+
+    def test_read_image_shows_next_and_refresh_controls(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            library_dir = tmp_path / 'library'
+            library_dir.mkdir()
+            first = library_dir / 'a.png'
+            second = library_dir / 'b.gif'
+            first.write_bytes(PNG_BYTES)
+            second.write_bytes(b'GIF89a')
+
+            client, db_path = self.create_client(tmp_path)
+            add_scan_path(str(library_dir), db_path)
+
+            response = client.get(
+                '/read',
+                query_string={'path': str(first), 'from_dir': str(library_dir), 'view': 'list'},
+            )
+            html = response.get_data(as_text=True)
+
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('Siguiente imagen', html)
+            self.assertIn(f'path={second}&amp;from_dir={library_dir}&amp;view=list', html)
+            self.assertIn('refresh=1', html)
 
 
 if __name__ == '__main__':

@@ -33,11 +33,17 @@ def init_db(db_path: Path | None = None) -> None:
             section TEXT NOT NULL,
             extension TEXT,
             size_bytes INTEGER,
+            file_mtime_ns INTEGER,
             discovered_at TEXT NOT NULL,
             last_seen_at TEXT NOT NULL
         );
         """
     )
+    existing_columns = {
+        row["name"] for row in conn.execute("PRAGMA table_info(items)").fetchall()
+    }
+    if "file_mtime_ns" not in existing_columns:
+        conn.execute("ALTER TABLE items ADD COLUMN file_mtime_ns INTEGER")
     conn.commit()
     conn.close()
 
