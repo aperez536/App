@@ -3,7 +3,7 @@ from pathlib import Path
 SECTION_EXTENSIONS = {
     "PDF": {".pdf"},
     "GIF": {".gif"},
-    "Images": {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".avif"},
+    "Images": {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".avif", ".svg", ".ico"},
     "Comics/Archives": {".cbz", ".cbr", ".zip", ".rar", ".rar5", ".7z"},
     "EPUB/Books": {".epub"},
 }

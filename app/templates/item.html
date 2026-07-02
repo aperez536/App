@@ -1,22 +1,92 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{{ item['file_name'] }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  </head>
-  <body>
-    <main>
-      <p><a href="{{ url_for('library') }}">← Back to library</a></p>
-      <h1>{{ item['file_name'] }}</h1>
-      <p><strong>Section:</strong> {{ item['section'] }}</p>
-      <p><strong>Path:</strong> {{ item['path'] }}</p>
-      <p>
-        <a href="{{ url_for('view_item', item_id=item['id']) }}" target="_blank" rel="noopener">Open in browser</a>
-        |
-        <a href="{{ url_for('download_item', item_id=item['id']) }}">Download</a>
-      </p>
-    </main>
-  </body>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ item['file_name'] }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="app-header">
+  <a href="{{ url_for('library') }}" class="app-logo">📚 Biblioteca</a>
+  <nav class="app-nav">
+    <a href="{{ url_for('library') }}" class="nav-link">🏠 Inicio</a>
+    <a href="{{ url_for('browse') }}" class="nav-link">📂 Explorar</a>
+  </nav>
+</header>
+
+<main class="app-content">
+  <div class="viewer-wrap">
+
+    <div class="items-header" style="margin-bottom:1rem">
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm" data-back>← Volver</a>
+      <span class="items-title" style="font-size:1rem;word-break:break-all">{{ item['file_name'] }}</span>
+    </div>
+
+    {# ── Inline viewer ───────────────────────────────────────── #}
+    {% if is_image %}
+      <div class="viewer-image-box" title="Clic para pantalla completa">
+        <img src="{{ url_for('view_item', item_id=item['id']) }}"
+             alt="{{ item['file_name'] }}">
+      </div>
+    {% elif item['section'] == 'PDF' %}
+      <div class="viewer-pdf-box">
+        <embed src="{{ url_for('view_item', item_id=item['id']) }}"
+               type="application/pdf"
+               width="100%" height="100%">
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:2rem">
+        <span class="empty-icon">
+          {% if item['section'] == 'EPUB/Books' %}📚
+          {% elif item['section'] == 'Comics/Archives' %}📦
+          {% else %}📁{% endif %}
+        </span>
+        <p class="empty-text">Vista previa no disponible para este tipo de archivo.</p>
+      </div>
+    {% endif %}
+
+    {# ── File info ───────────────────────────────────────────── #}
+    <div class="viewer-info">
+      <div class="vi-item">
+        <span class="vi-label">Sección</span>
+        <span class="vi-value">{{ item['section'] }}</span>
+      </div>
+      <div class="vi-item">
+        <span class="vi-label">Extensión</span>
+        <span class="vi-value">{{ (item['extension'] or '?')|upper }}</span>
+      </div>
+      {% if item['size_bytes'] %}
+        <div class="vi-item">
+          <span class="vi-label">Tamaño</span>
+          <span class="vi-value">
+            {% set sz = item['size_bytes'] %}
+            {% if sz >= 1048576 %}{{ '%.1f'|format(sz/1048576) }} MB
+            {% elif sz >= 1024 %}{{ '%.1f'|format(sz/1024) }} KB
+            {% else %}{{ sz }} B{% endif %}
+          </span>
+        </div>
+      {% endif %}
+      <div class="vi-item" style="flex:1;min-width:200px">
+        <span class="vi-label">Ruta</span>
+        <span class="vi-value" style="font-family:monospace;font-size:.82rem;color:var(--text-muted)">{{ item['path'] }}</span>
+      </div>
+    </div>
+
+    {# ── Actions ─────────────────────────────────────────────── #}
+    <div class="viewer-actions">
+      <a class="btn btn-primary" href="{{ url_for('view_item', item_id=item['id']) }}" target="_blank" rel="noopener" tabindex="0">
+        🔗 Abrir en navegador
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('download_item', item_id=item['id']) }}" tabindex="0">
+        ⬇ Descargar
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
 </html>
